@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101418">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,-25..200&display=block">
+<title>REFIT and Track · Saliohjelma 2026</title>
+<style>
+  :root{
+    --bg:#0a0d12; --card:#161c26; --card2:#232d3d; --text:#f4f7fa; --muted:#bcc8d4;
+    --accent:#34e07a; --accent2:#a3f7c4; --accent-dim:#0e3a22; --line:#46596e; --warn:#ffd166;
+    --a:#4aa8ff; --a2:#8fd0ff; --b:#ff6bb5; --b2:#ffa8d4;
+    --grad-accent:linear-gradient(135deg,#16c964 0%,#34e07a 55%,#7ef0ae 100%);
+    --grad-a:linear-gradient(135deg,#1f6fe0 0%,#4aa8ff 100%);
+    --grad-b:linear-gradient(135deg,#e0378d 0%,#ff6bb5 100%);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  :focus-visible{outline:3px solid var(--accent2); outline-offset:2px; border-radius:4px;}
+  .material-symbols-outlined{font-variation-settings:"FILL" 0,"wght" 500,"GRAD" 0,"opsz" 24;
+    vertical-align:middle; line-height:1; font-size:1.15em; display:inline-block;}
+  .brand{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .brandIcon{font-size:1.9rem; color:#052912; background:var(--grad-accent); border-radius:14px;
+    padding:8px; box-shadow:0 4px 16px rgba(52,224,122,.35); flex-shrink:0;}
+  h1{margin:0; font-size:1.5rem; font-weight:800; letter-spacing:.2px; display:flex; align-items:center; gap:8px;}
+  h1 .logo{background:var(--grad-accent); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  h1 .logoTrack{font-size:.56em; font-weight:800; letter-spacing:1.2px; color:#052912;
+    background:var(--grad-accent); padding:3px 8px; border-radius:7px;}
+  .brand .sub{margin-top:0; margin-left:auto;}
+  .verSwitch{display:flex; width:fit-content; align-items:center; gap:6px; margin:18px auto 4px;
+    font-size:.78rem; color:var(--muted); text-decoration:none; border:1px solid var(--line);
+    padding:8px 16px; border-radius:20px; background:var(--card);}
+  .verSwitch:hover{border-color:var(--accent); color:var(--text);}
+  .verSwitch .material-symbols-outlined{font-size:1em;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1200px 500px at 50% -150px, #1a2a3d 0%, var(--bg) 60%) fixed;
+    color:var(--text); padding-bottom:70px; font-size:15px; line-height:1.4;}
+  header{padding:24px 16px 8px; max-width:640px; margin:0 auto;}
+  .sub{color:var(--muted); font-size:.85rem; margin-top:4px; font-weight:400;}
+  main{max-width:640px; margin:0 auto; padding:8px 12px;}
+
+  .progressWrap{position:sticky; top:0; z-index:10;
+    background:linear-gradient(180deg, #0a0d12 75%, transparent);
+    padding:12px 16px 16px; max-width:640px; margin:0 auto;}
+  .bar{height:14px; background:var(--card2); border-radius:8px; overflow:hidden;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.4);}
+  .bar>div{height:100%; width:0%; background:var(--grad-accent); border-radius:8px;
+    transition:width .3s; box-shadow:0 0 12px rgba(52,224,122,.5);}
+  .barLabel{display:flex; justify-content:space-between; font-size:.82rem; color:var(--text);
+    margin-top:8px; font-weight:400;}
+  .barLabel #phaseText{color:var(--accent2);}
+
+  .planPick{display:flex; gap:10px; margin:14px 0;}
+  .planPick button{flex:1; padding:15px 8px; border-radius:14px; border:2px solid var(--line);
+    background:var(--card); color:var(--text); font-size:1rem; font-weight:600; cursor:pointer;
+    transition:transform .1s;}
+  .planPick button:active{transform:scale(.97);}
+  .planPick button small{display:block; font-weight:400; color:var(--muted); font-size:.72rem; margin-top:5px;}
+  .planPick button.activeA{border-color:var(--a); background:var(--grad-a); color:#fff;
+    box-shadow:0 4px 20px rgba(74,168,255,.35);}
+  .planPick button.activeA small{color:#dbeeff;}
+  .planPick button.activeB{border-color:var(--b); background:var(--grad-b); color:#fff;
+    box-shadow:0 4px 20px rgba(255,107,181,.35);}
+  .planPick button.activeB small{color:#ffe0ef;}
+
+  section.block{background:var(--card); border-radius:16px; margin:14px 0; overflow:hidden;
+    border:1px solid var(--line); box-shadow:0 2px 10px rgba(0,0,0,.35);}
+  .blockHead{display:flex; align-items:center; gap:12px; padding:16px 14px; cursor:pointer; user-select:none;}
+  .blockHead .num{width:34px; height:34px; border-radius:50%; background:var(--card2);
+    display:flex; align-items:center; justify-content:center; font-weight:600; font-size:1rem;
+    color:var(--text); flex-shrink:0; border:1px solid var(--line);}
+  .blockHead.done .num{background:var(--grad-accent); color:#052912; border:none;
+    box-shadow:0 0 10px rgba(52,224,122,.5);}
+  .blockHead h2{margin:0; font-size:1.02rem; font-weight:600; flex:1; display:flex; align-items:center; gap:8px;}
+  .blockHead.done h2{color:var(--accent2);}
+  .blockHead .count{font-size:.82rem; color:var(--muted); font-weight:400;}
+  .blockHead .chev{color:var(--muted); transition:transform .2s;}
+  section.block.open .chev{transform:rotate(90deg); color:var(--accent);}
+  .items{display:none; border-top:1px solid var(--line);}
+  section.block.open .items{display:block;}
+
+  .groupHead{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    font-size:.72rem; font-weight:600; letter-spacing:.4px; text-transform:uppercase;
+    color:var(--accent2); background:var(--accent-dim); padding:6px 10px 6px 14px;
+    border-top:1px solid var(--line);}
+  .items label.item:first-child, .items .groupHead:first-child + label.item{border-top:none;}
+
+  label.item{display:flex; align-items:center; gap:13px; padding:14px;
+    border-bottom:1px solid var(--line); cursor:pointer;}
+  label.item:last-child{border-bottom:none;}
+  label.item input[type="checkbox"]{width:26px; height:26px; accent-color:var(--accent); flex-shrink:0;}
+  label.item .itemBody{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;}
+  label.item .itemTop{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  label.item .name{flex:1; font-size:.93rem; font-weight:400;}
+  label.item .reps{color:var(--accent2); font-size:.82rem; font-weight:500; white-space:nowrap;
+    background:var(--accent-dim); padding:3px 9px; border-radius:8px;}
+  label.item .reps:empty{display:none;}
+  label.item .desc{font-size:.7rem; color:var(--muted); font-weight:400; line-height:1.3; letter-spacing:-.015em;}
+  label.item.checked{background:rgba(52,224,122,.06);}
+  label.item.checked .name{color:var(--muted); text-decoration:line-through;}
+  label.item.checked .reps{opacity:.5;}
+  label.item.checked .desc{opacity:.5;}
+
+  .weightInput{width:56px; padding:5px 6px; border-radius:8px; border:1px solid var(--line);
+    background:var(--card2); color:var(--text); font-size:.78rem; font-weight:600; text-align:center;
+    flex-shrink:0;}
+  .weightInput::placeholder{color:var(--muted); font-weight:400;}
+  .weightInput:focus{outline:2px solid var(--a); outline-offset:1px;}
+  label.item.checked .weightInput{opacity:.6;}
+
+  .rounds{display:flex; gap:4px; flex-shrink:0;}
+  .rdot{width:22px; height:22px; border-radius:50%; border:1px solid var(--line);
+    background:var(--card2); color:var(--muted); font-size:.72rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;}
+  .rdot.on{background:var(--grad-accent); color:#052912; border-color:transparent;}
+
+  .note{font-size:.8rem; color:var(--warn); padding:12px 14px; border-top:1px solid var(--line);
+    background:rgba(255,209,102,.07); font-weight:400;}
+
+  .footerBar{position:fixed; bottom:0; left:0; right:0;
+    background:rgba(16,21,29,.92); backdrop-filter:blur(10px);
+    border-top:1px solid var(--line); padding:8px 16px calc(8px + env(safe-area-inset-bottom));}
+  .footerInner{max-width:640px; margin:0 auto; display:flex; gap:8px;}
+  .footerBar button{flex:1; padding:9px; border-radius:10px; border:none; font-size:.82rem;
+    font-weight:600; cursor:pointer;}
+  #finishBtn{background:var(--grad-accent); color:#052912; box-shadow:0 2px 10px rgba(52,224,122,.35);}
+  #finishBtn:disabled{background:var(--card2); color:var(--muted); box-shadow:none;}
+  #resetBtn{background:var(--card2); color:var(--text); flex:0 0 auto; padding:9px 14px;
+    border:1px solid var(--line);}
+
+  .history{margin:24px 0 10px;}
+  .history h3{font-size:.95rem; color:var(--text); font-weight:600; margin:0 0 10px;}
+  .histItem{background:var(--card); border:1px solid var(--line); border-radius:12px;
+    margin-bottom:7px; font-size:.88rem; font-weight:400; overflow:hidden;}
+  .histTop{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px;}
+  .histItem.expandable .histTop{cursor:pointer;}
+  .histItem .tag{font-weight:600; padding:1px 10px; border-radius:8px;}
+  .histItem .tagA{color:#fff; background:var(--grad-a);}
+  .histItem .tagB{color:#fff; background:var(--grad-b);}
+  .histItem .histRight{display:flex; align-items:center; gap:10px;}
+  .histExpandIcon{color:var(--muted); font-size:.72rem;}
+  .histDel{background:none; border:none; color:var(--muted); font-size:1rem; line-height:1;
+    cursor:pointer; padding:2px 4px;}
+  .histDel:hover{color:var(--b);}
+  .wList{padding:0 14px 10px; display:flex; flex-direction:column; gap:4px;
+    border-top:1px solid var(--line); margin-top:2px; padding-top:8px;}
+  .wRow{display:flex; justify-content:space-between; font-size:.8rem; color:var(--muted);}
+  .wRow span:last-child{color:var(--accent2); font-weight:600;}
+  .empty{color:var(--muted); font-size:.92rem;}
+  .histTools{display:flex; gap:8px; margin-top:12px;}
+  .histTools button{flex:1; padding:12px; border-radius:12px; border:1px solid var(--line);
+    background:var(--card2); color:var(--text); font-size:.85rem; font-weight:400; cursor:pointer;}
+  #importMsg{font-size:.8rem; margin-top:6px; color:var(--accent); min-height:1em; font-weight:400;}
+  .celebrate{text-align:center; padding:16px; font-size:1rem; font-weight:400; display:none;
+    background:var(--grad-accent); -webkit-background-clip:text; background-clip:text; color:transparent;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="material-symbols-outlined brandIcon" aria-hidden="true">fitness_center</span>
+    <h1><span class="logo">REFIT</span><span class="logoTrack">+TRACK</span></h1>
+    <div class="sub" id="todayLabel"></div>
+  </div>
+</header>
+
+<div class="progressWrap">
+  <div class="bar"><div id="barFill"></div></div>
+  <div class="barLabel"><span id="barText">0 / 0 tehty</span><span id="phaseText"></span></div>
+</div>
+
+<main>
+  <div class="planPick">
+    <button id="pickA" onclick="setPlan('A')">Treeni A<small>26' Hybrid · supersarjat · kiertoharjoittelu</small></button>
+    <button id="pickB" onclick="setPlan('B')">Treeni B<small>Max hypertrofia · isot painot · 2 min tauko</small></button>
+  </div>
+  <div id="blocks"></div>
+  <div class="celebrate" id="celebrate"><span class="material-symbols-outlined" aria-hidden="true">celebration</span> Koko treeni tehty — hyvä setti!</div>
+
+  <div class="history">
+    <h3>Treenihistoria</h3>
+    <div id="histList"><div class="empty">Ei vielä merkattuja treenejä.</div></div>
+    <div class="histTools">
+      <button onclick="exportData()"><span class="material-symbols-outlined" aria-hidden="true">download</span> Vie varmuuskopio (JSON)</button>
+      <button onclick="document.getElementById('importFile').click()"><span class="material-symbols-outlined" aria-hidden="true">upload</span> Tuo varmuuskopio</button>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(this)">
+    </div>
+    <div id="importMsg"></div>
+  </div>
+
+  <a class="verSwitch" href="index-0.5.html">
+    <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span>
+    REFIT (ilman painoseurantaa)
+  </a>
+</main>
+
+<div class="footerBar">
+  <div class="footerInner">
+    <button id="resetBtn" onclick="resetDay()">Tyhjennä</button>
+    <button id="finishBtn" onclick="finishWorkout()" disabled>Merkitse treeni tehdyksi ✓</button>
+  </div>
+</div>
+
+<script>
+const STATE_KEY = "refittrack-state";
+const HIST_KEY = "refittrack-history";
+const WEIGHT_BLOCKS = ["A","B"];
+
+const PROGRAM = {
+  common1: {
+    title: "Alkuvenyttely",
+    items: [
+      ["Niskan pyöritys", "", undefined, "Pyöritä päätä rauhallisesti ympäri, molempiin suuntiin."],
+      ["Askelkyykky-venytys L/R", "", undefined, "Pitkä askel eteen, laske lantiota alas, venytä molemmat puolet."],
+      ["Sivutaivutus L/R", "", undefined, "Seiso haara-asennossa, taivuta vartaloa sivulle vuorotellen."],
+      ["Kinnerjänteet", "", undefined, "Venytä reiden takaosaa esim. jalka koholla tai eteentaivutuksessa."],
+    ]
+  },
+  common2: {
+    title: "Alkuverryttely",
+    items: [
+      ["Kiertoliike seisten", "×20", undefined, "Kierrä ylävartaloa puolelta toiselle käsivarret rentona."],
+      ["Kiertoliike kulmassa", "×20", undefined, "Sama kiertoliike lantiosta etukumarassa asennossa."],
+      ["Tuulimylly", "×20", undefined, "Kierrä suoria käsiä isoin liikkein eteen/taakse."],
+      ["Polvien nosto", "×20", undefined, "Nosta polvia vuorotellen kohti rintaa paikallaan juosten."],
+      ["Askelkyykky hyppien", "×20", undefined, "Hyppää vuorotellen jalanvaihdolla askelkyykkyasennossa."],
+    ]
+  },
+  A: {
+    title: "Painoharjoitteet — Treeni A",
+    note: "Kiertoharjoittelu OG · supersarjat · 3× kierrosta",
+    items: [
+      ["Rinnalleveto + punnerrusnosto", "8–10 ×2", 1, "Vedä paino rinnalle, jatka liike punnerrukseksi ylös."],
+      ["Vipunosto sivulta", "8–10 ×2", 1, "Nosta käsipainot suorin käsin sivuille hartioiden tasolle."],
+      ["Penkkipunnerrus (kp tai levytanko)", "8–10 ×2", 2, "Punnerra paino penkillä maaten rinnalta ylös."],
+      ["Vipunosto maaten", "8–10 ×2", 2, "Selin makuulla nosta käsipainot suorin käsin sivulta ylös."],
+      ["Kulmasoutu käsipainot", "8–10 ×2", 3, "Etukumarassa vedä käsipainot vartaloa kohti, kyynärpäät taakse."],
+      ["Leuanveto", "8–10 ×2", 3, "Vedä itsesi tangolla ylös leuka tangon yli."],
+      ["Hauiskääntö kp/lt", "8–10 ×2", 4, "Käännä paino kyynärpää tukevana kohti hartiaa."],
+      ["Ranskalainen punnerrus", "8–10 ×2", 4, "Pidä paino suorin käsin pään yläpuolella, laske se koukistaen kyynärpäitä niskan taakse ja ojenna takaisin ylös."],
+      ["Kyykky", "8–10 ×2", 5, "Laskeudu kyykkyyn selkä suorana, nouse ylös jalkojen voimalla."],
+      ["Askelkyykky", "8–10 ×2", 5, "Astu pitkä askel eteen, laske takajalan polvi lähelle lattiaa."],
+      ["Pohkeet", "20 ×2", undefined, "Nouse varpaille ja laske hitaasti takaisin, seisten tai penkin reunalla."],
+    ]
+  },
+  B: {
+    title: "Painoharjoitteet — Treeni B",
+    note: "Max hypertrofia* · ei kiertoja · isot painot · 2 min tauko/sarja · kevyet painot → toistoja lisää (*mukailtu Arnold Golden Six)",
+    items: [
+      ["Kyykky", "10 ×4", undefined, "Laskeudu kyykkyyn selkä suorana, nouse ylös jalkojen voimalla. Käytä isoa painoa."],
+      ["Penkkipunnerrus", "10 ×3", undefined, "Punnerra paino penkillä maaten rinnalta ylös."],
+      ["Kulmasoutu (tai leuanveto)", "10 ×3", undefined, "Etukumarassa vedä paino vartaloa kohti, tai vedä leuanveto tangolla."],
+      ["Pystypunnerrus", "10 ×4", undefined, "Punnerra paino hartioilta suoraan pään yläpuolelle seisten."],
+      ["Hauiskääntö", "10 ×3", undefined, "Käännä paino kyynärpää tukevana kohti hartiaa."],
+      ["Vatsalihakset / istumaannousut", "max ×3 tai 15 ×3", undefined, "Tee istumaannousuja niin monta kuin jaksat, kolme sarjaa."],
+    ]
+  },
+  abs: {
+    title: "Vatsalihakset",
+    items: [
+      ["Istumaannousu", "×10", undefined, "Nouse selinmakuulta ylös vatsalihaksia jännittäen."],
+      ["Rutistus kiertäen", "×60", undefined, "Rutista ylävartaloa kiertäen kohti vastakkaista polvea, vuorotellen."],
+      ["Potkuliike ja nosto", "×10", undefined, "Selinmakuulla potki jalkoja ristiin ja nosta suorina ylös."],
+      ["Sivunosto", "×10", undefined, "Kylkimakuulla nosta jalat/ylävartalo sivuttain kohti toisiaan."],
+      ["Lankku", "×1", undefined, "Pidä vartalo suorana kyynärvarsien ja varpaiden varassa, jännitä keskivartalo."],
+    ]
+  },
+  cooldown: {
+    title: "Loppuverryttely",
+    items: [
+      ["Kinnerjänteet seisten", "", undefined, "Taivu eteen suorin jaloin, venytä reiden takaosaa."],
+      ["Kinnerjänteet istuen", "", undefined, "Istu jalat suorina, kurkota kohti varpaita."],
+      ["Kinnerjänteet haarallaan", "", undefined, "Istu jalat haarallaan, kurkota vuorotellen kohti kumpaakin jalkaa."],
+      ["Reiden sisäsivut, risti-istunta", "", undefined, "Istu jalkapohjat vastakkain, paina polvia kevyesti alaspäin."],
+      ["Reiden etuosat", "", undefined, "Seiso, vedä kantapäätä kohti pakaraa, venytä reiden etuosaa."],
+      ["Pohkeet", "", undefined, "Nojaa seinään, ojenna toinen jalka taakse ja paina kantapää maahan."],
+    ]
+  }
+};
+const PHASE_LABELS = ["Alkuvenyttely","Alkuverryttely","Painotreeni","Vatsat","Loppuverryttely"];
+const PHASE_META = {"common1":{icon:"self_care"},"common2":{icon:"directions_run"},"A":{icon:"fitness_center"},"B":{icon:"fitness_center"},"abs":{icon:"local_fire_department"},"cooldown":{icon:"spa"}};
+
+
+let expandedHist = new Set();
+let state = load();
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(STATE_KEY)); if(s) return s; }catch(e){}
+  return { plan:"A", checks:{}, rounds:{}, weights:{}, date: todayStr() };
+}
+function save(){ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+if(!state.rounds) state.rounds = {};
+if(!state.weights) state.weights = {};
+
+// new day → clear checks/rounds automatically, keep weights (progressive overload reference)
+if(state.date !== todayStr()){ state.checks = {}; state.rounds = {}; state.date = todayStr(); save(); }
+
+function cycleRound(key, n){
+  const cur = state.rounds[key]||0;
+  state.rounds[key] = (cur===n) ? n-1 : n;
+  save(); render();
+}
+
+function setWeight(key, val){
+  const v = val.trim();
+  if(v==="") delete state.weights[key]; else state.weights[key] = v;
+  save(); render();
+}
+
+function blockOrder(){ return ["common1","common2", state.plan, "abs","cooldown"]; }
+
+function setPlan(p){
+  if(state.plan !== p){
+    // drop the other plan's checks
+    Object.keys(state.checks).forEach(k=>{ if(k.startsWith("A:")||k.startsWith("B:")) delete state.checks[k]; });
+  }
+  state.plan = p; save(); render();
+}
+
+function toggle(key, on){
+  if(on) state.checks[key] = true; else delete state.checks[key];
+  save(); render();
+}
+
+function render(){
+  document.getElementById("pickA").className = state.plan==="A" ? "activeA" : "";
+  document.getElementById("pickB").className = state.plan==="B" ? "activeB" : "";
+  const wrap = document.getElementById("blocks");
+  const openBefore = new Set([...wrap.querySelectorAll("section.open")].map(s=>s.dataset.key));
+  wrap.innerHTML = "";
+  let total=0, done=0, firstUnfinished=null;
+
+  blockOrder().forEach((bk, idx)=>{
+    const b = PROGRAM[bk];
+    const sec = document.createElement("section");
+    sec.className = "block"; sec.dataset.key = bk;
+    let bDone=0;
+    let lastGroup=null, groupNum=0;
+    const showWeight = WEIGHT_BLOCKS.includes(bk);
+    const itemsHtml = b.items.map((it,i)=>{
+      const key = bk+":"+i;
+      const checked = !!state.checks[key];
+      total++; if(checked){ done++; bDone++; }
+      let header = "";
+      const group = it[2];
+      if(group!==undefined && group!==lastGroup){
+        groupNum++;
+        const gKey = bk+":g"+group;
+        const gCur = state.rounds[gKey]||0;
+        const gRounds = `<span class="rounds">${[1,2,3].map(n=>
+          `<button type="button" class="rdot ${n<=gCur?"on":""}" onclick="event.preventDefault();event.stopPropagation();cycleRound('${gKey}',${n})">${n}</button>`
+        ).join("")}</span>`;
+        header = `<div class="groupHead"><span>Supersarja ${groupNum}</span>${gRounds}</div>`;
+      }
+      lastGroup = group;
+      let weightHtml = "";
+      if(showWeight){
+        const w = state.weights[key]||"";
+        weightHtml = `<input type="text" inputmode="decimal" class="weightInput" placeholder="kg" value="${w}"
+          onclick="event.stopPropagation()" onchange="setWeight('${key}', this.value)">`;
+      }
+      const desc = it[3];
+      return `${header}<label class="item ${checked?"checked":""}">
+        <input type="checkbox" ${checked?"checked":""} onchange="toggle('${key}',this.checked)">
+        <div class="itemBody">
+          <div class="itemTop"><span class="name">${it[0]}</span><span class="reps">${it[1]}</span>${weightHtml}</div>
+          ${desc?`<div class="desc">${desc}</div>`:""}
+        </div></label>`;
+    }).join("");
+    const allDone = bDone===b.items.length;
+    if(!allDone && firstUnfinished===null) firstUnfinished = idx;
+    sec.innerHTML = `
+      <div class="blockHead ${allDone?"done":""}" onclick="this.parentNode.classList.toggle('open')">
+        <div class="num">${allDone?"✓":idx+1}</div>
+        <h2><span class="material-symbols-outlined" aria-hidden="true">${(PHASE_META[bk]||{}).icon||""}</span> ${b.title}</h2>
+        <span class="count">${bDone}/${b.items.length}</span>
+        <span class="chev">▶</span>
+      </div>
+      <div class="items">${itemsHtml}${b.note?`<div class="note"><span class="material-symbols-outlined" aria-hidden="true">info</span> ${b.note}</div>`:""}</div>`;
+    if(openBefore.size ? openBefore.has(bk) : false) sec.classList.add("open");
+    wrap.appendChild(sec);
+  });
+
+  // if nothing was open, open the current phase
+  if(![...wrap.children].some(s=>s.classList.contains("open")) && firstUnfinished!==null)
+    wrap.children[firstUnfinished].classList.add("open");
+
+  const pct = total? Math.round(done/total*100):0;
+  document.getElementById("barFill").style.width = pct+"%";
+  document.getElementById("barText").textContent = `${done} / ${total} tehty (${pct}%)`;
+  document.getElementById("phaseText").textContent =
+    firstUnfinished===null ? "Valmis! 💪" : "Nyt: "+PHASE_LABELS[firstUnfinished];
+  document.getElementById("celebrate").style.display = firstUnfinished===null && done>0 ? "block":"none";
+  document.getElementById("finishBtn").disabled = done===0;
+  renderHistory();
+}
+
+function finishWorkout(){
+  const hist = JSON.parse(localStorage.getItem(HIST_KEY)||"[]");
+  const total = blockOrder().reduce((n,bk)=>n+PROGRAM[bk].items.length,0);
+  const done = Object.keys(state.checks).length;
+  const weights = {};
+  PROGRAM[state.plan].items.forEach((it,i)=>{
+    const key = state.plan+":"+i;
+    if(state.weights[key]) weights[it[0]] = state.weights[key];
+  });
+  hist.unshift({date: todayStr(), plan: state.plan, done, total, weights});
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist.slice(0,50)));
+  state.checks = {}; state.rounds = {}; save(); render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function resetDay(){
+  if(confirm("Tyhjennetäänkö tämän päivän merkinnät? (Käytetyt painot säilyvät.)")){
+    state.checks={}; state.rounds={}; save(); render();
+  }
+}
+
+function renderHistory(){
+  const hist = JSON.parse(localStorage.getItem(HIST_KEY)||"[]");
+  const el = document.getElementById("histList");
+  if(!hist.length){ el.innerHTML = '<div class="empty">Ei vielä merkattuja treenejä.</div>'; return; }
+  el.innerHTML = hist.map((h,i)=>{
+    const d = new Date(h.date+"T12:00").toLocaleDateString("fi-FI",{weekday:"short", day:"numeric", month:"numeric"});
+    const hasWeights = h.weights && Object.keys(h.weights).length>0;
+    const expanded = expandedHist.has(i);
+    const weightRows = hasWeights ? Object.entries(h.weights).map(([name,w])=>
+      `<div class="wRow"><span>${name}</span><span>${w} kg</span></div>`).join("") : "";
+    return `<div class="histItem ${hasWeights?"expandable":""}">
+      <div class="histTop" ${hasWeights?`onclick="toggleHistExpand(${i})"`:""}>
+        <span>${d}</span>
+        <span class="histRight">
+          <span class="tag tag${h.plan}">Treeni ${h.plan}</span>
+          <span>${h.done}/${h.total} ✓</span>
+          ${hasWeights?`<span class="histExpandIcon">${expanded?"▾ painot":"▸ painot"}</span>`:""}
+          <button class="histDel" title="Poista" onclick="event.stopPropagation();deleteHistory(${i})"><span class="material-symbols-outlined" aria-hidden="true">delete</span></button>
+        </span>
+      </div>
+      ${expanded && hasWeights ? `<div class="wList">${weightRows}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+function toggleHistExpand(i){
+  if(expandedHist.has(i)) expandedHist.delete(i); else expandedHist.add(i);
+  renderHistory();
+}
+
+function deleteHistory(i){
+  const hist = JSON.parse(localStorage.getItem(HIST_KEY)||"[]");
+  hist.splice(i,1);
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+  expandedHist.delete(i);
+  renderHistory();
+}
+
+function exportData(){
+  const data = {
+    app: "refit-track",
+    exported: new Date().toISOString(),
+    history: JSON.parse(localStorage.getItem(HIST_KEY)||"[]"),
+    state: state
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "refit-track-varmuuskopio-"+todayStr()+".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData(input){
+  const file = input.files[0];
+  input.value = "";
+  if(!file) return;
+  const msg = document.getElementById("importMsg");
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(data.app!=="refit-track" || !Array.isArray(data.history)) throw new Error("bad format");
+      // merge: combine histories, drop exact duplicates, newest first
+      const existing = JSON.parse(localStorage.getItem(HIST_KEY)||"[]");
+      const seen = new Set(existing.map(h=>JSON.stringify(h)));
+      const merged = existing.concat(data.history.filter(h=>!seen.has(JSON.stringify(h))));
+      merged.sort((x,y)=> y.date.localeCompare(x.date));
+      localStorage.setItem(HIST_KEY, JSON.stringify(merged.slice(0,200)));
+      // restore today's checks/weights only if the backup is from today and today is empty
+      if(data.state && data.state.date===todayStr() && Object.keys(state.checks).length===0){
+        state = data.state; if(!state.weights) state.weights={}; save();
+      }
+      msg.style.color = "var(--accent)";
+      msg.textContent = "Tuotu: "+merged.length+" treeniä historiassa ✓";
+      render();
+    }catch(e){
+      msg.style.color = "var(--warn)";
+      msg.textContent = "Tiedostoa ei voitu lukea — onko se REFIT and Track -varmuuskopio?";
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById("todayLabel").textContent =
+  new Date().toLocaleDateString("fi-FI",{weekday:"long", day:"numeric", month:"long", year:"numeric"});
+render();
+</script>
+</body>
+</html>
