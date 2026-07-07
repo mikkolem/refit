@@ -34,7 +34,9 @@ molempiin päteviä muutoksia (ks. kohta 6).
    yhteydessä, koska ohjelma tehdään 1–3 kierroksena kiertoharjoitteluna.
 5. REFIT+TRACK:ssa käyttäjä voi kirjata käytetyn painon (kg) jokaiseen
    painoharjoitteeseen. Paino jää näkyviin seuraavalle kerralle (ei nollaudu
-   päivän vaihtuessa), jotta progressiivista kuormaa on helppo seurata.
+   automaattisesti päivän vaihtuessa), jotta progressiivista kuormaa on helppo
+   seurata. "Tyhjennä"-nappi nollaa halutessa myös painot (varmistetaan
+   erikseen dialogilla).
 6. "Merkitse treeni tehdyksi" tallentaa treenin (+ REFIT+TRACK:ssa käytetyt painot)
    historialistaan ja nollaa päivän rastit.
 7. Treenihistoria näkyy sivun alaosassa, siitä voi poistaa yksittäisiä merkintöjä,
@@ -111,7 +113,7 @@ Ei backendiä — kaikki data on selaimen `localStorage`:ssa, laitekohtaista.
 
 | Avain | Sisältö | Nollautuu |
 |---|---|---|
-| `refit(-track)-state` | `{plan, checks, rounds, weights?, date}` — päivän tilanne | `checks`+`rounds` nollautuu automaattisesti kun `date` ≠ tämä päivä, tai manuaalisesti "Tyhjennä"-napista. `weights` (vain REFIT+TRACK) **ei nollaudu** — se on tarkoituksella pysyvä referenssi viimeksi käytetylle painolle. |
+| `refit(-track)-state` | `{plan, checks, rounds, weights?, date}` — päivän tilanne | `checks`+`rounds` nollautuu automaattisesti kun `date` ≠ tämä päivä. `weights` (vain REFIT+TRACK) **ei nollaudu automaattisesti** päivän vaihtuessa — se on tarkoituksella pysyvä referenssi viimeksi käytetylle painolle. Manuaalinen "Tyhjennä"-nappi nollaa REFIT+TRACK:ssa `checks`+`rounds`+`weights` kaikki kolme (käyttäjä vahvistaa tämän erikseen, koska se pyyhkii myös painot). |
 | `refit(-track)-history` | Taulukko valmiiksi merkityistä treeneistä | Ei nollaudu itsestään; poistetaan yksittäin roskakori-ikonista. |
 
 REFIT käyttää avainten etuliitettä `refit-`, REFIT+TRACK `refittrack-` —
