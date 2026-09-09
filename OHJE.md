@@ -30,13 +30,20 @@ molempiin päteviä muutoksia (ks. kohta 6).
    Alkuvenyttely → Alkuverryttely → Painoharjoitteet (A tai B) → Vatsalihakset → Loppuverryttely.
 3. Käyttäjä rastittaa liikkeet tehdyiksi. Yläreunan palkki näyttää kokonaisedistymän
    ja tekstinä missä vaiheessa mennään.
-4. Treeni A:n supersarjoissa on lisäksi kierrosmerkintä (1/2/3) koko liikeparin
-   yhteydessä, koska ohjelma tehdään 1–3 kierroksena kiertoharjoitteluna.
+4. Treeni A:n supersarjoissa on kierros-1 aina näkyvissä, ja jokaisen
+   supersarjan alla on **"+ Lisää kierros"** -painike joka avaa uuden
+   "Kierros 2" / "Kierros 3" -osion samoilla liikkeillä ja omilla rasteillaan
+   (kiertoharjoittelu tehdään 1–3 kierroksena, määrä vaihtelee päivittäin).
+   "Poista viimeisin kierros" -painike siivoaa viimeksi avatun kierroksen
+   pois rasteineen.
 5. REFIT+TRACK:ssa käyttäjä voi kirjata käytetyn painon (kg) jokaiseen
-   painoharjoitteeseen. Paino jää näkyviin seuraavalle kerralle (ei nollaudu
+   painoharjoitteeseen, ja valita pienellä **"yht"/"kpl"**-vaihtopainikkeella
+   onko kyseessä yhteispaino (esim. levytanko) vai paino per käsi (esim.
+   käsipainot) — tallentuu historiaan luettavana tekstinä (esim. "12 kg ·
+   per käsi"). Paino jää näkyviin seuraavalle kerralle (ei nollaudu
    automaattisesti päivän vaihtuessa), jotta progressiivista kuormaa on helppo
-   seurata. "Tyhjennä"-nappi nollaa halutessa myös painot (varmistetaan
-   erikseen dialogilla).
+   seurata. "Tyhjennä"-nappi nollaa halutessa myös painot ja yksikkövalinnat
+   (varmistetaan erikseen dialogilla).
 6. "Merkitse treeni tehdyksi" tallentaa treenin (+ REFIT+TRACK:ssa käytetyt painot)
    historialistaan ja nollaa päivän rastit.
 7. Treenihistoria näkyy sivun alaosassa, siitä voi poistaa yksittäisiä merkintöjä,
@@ -113,21 +120,26 @@ Ei backendiä — kaikki data on selaimen `localStorage`:ssa, laitekohtaista.
 
 | Avain | Sisältö | Nollautuu |
 |---|---|---|
-| `refit(-track)-state` | `{plan, checks, rounds, weights?, date}` — päivän tilanne | `checks`+`rounds` nollautuu automaattisesti kun `date` ≠ tämä päivä. `weights` (vain REFIT+TRACK) **ei nollaudu automaattisesti** päivän vaihtuessa — se on tarkoituksella pysyvä referenssi viimeksi käytetylle painolle. Manuaalinen "Tyhjennä"-nappi nollaa REFIT+TRACK:ssa `checks`+`rounds`+`weights` kaikki kolme (käyttäjä vahvistaa tämän erikseen, koska se pyyhkii myös painot). |
+| `refit(-track)-state` | `{plan, checks, extraRounds, weights?, weightUnit?, date}` — päivän tilanne | `checks`+`extraRounds` nollautuu automaattisesti kun `date` ≠ tämä päivä. `weights`+`weightUnit` (vain REFIT+TRACK) **eivät nollaudu automaattisesti** päivän vaihtuessa — ne ovat tarkoituksella pysyvä referenssi viimeksi käytetylle painolle. Manuaalinen "Tyhjennä"-nappi nollaa REFIT+TRACK:ssa kaikki neljä (`checks`+`extraRounds`+`weights`+`weightUnit`); REFIT (`index-0.5.html`) nollaa vain `checks`+`extraRounds`, koska sillä ei ole painokenttiä. |
 | `refit(-track)-history` | Taulukko valmiiksi merkityistä treeneistä | Ei nollaudu itsestään; poistetaan yksittäin roskakori-ikonista. |
 
 REFIT käyttää avainten etuliitettä `refit-`, REFIT+TRACK `refittrack-` —
 tarkoituksella eri, jotta kahden version data ei mene sekaisin samalla
 origin/pathilla.
 
-`checks`-avainten muoto: `"<blockKey>:<itemIndex>"`, esim. `"A:3"`.
+`checks`-avainten muoto: `"<blockKey>:<itemIndex>"`, esim. `"A:3"`. Kun
+liike tehdään lisäkierroksella (ks. alla), avain saa `:r<kierrosnumero>`-
+päätteen: `"A:3:r2"` on saman liikkeen kierroksen 2 rasti.
 
-`rounds`-avainten muoto **muuttuu ryhmän mukaan** (REFIT+TRACK:ssa):
-supersarjan kierrospallot on kiinnitetty koko ryhmään, ei yksittäiseen
-liikkeeseen, avain on `"<blockKey>:g<ryhmäId>"` esim. `"A:g2"`.
+`extraRounds`-avainten muoto on ryhmätasoinen: `"<blockKey>:g<ryhmäId>"`,
+esim. `"A:g2"`. Arvo on kokonaisluku `0`–`MAX_EXTRA_ROUNDS` (nyt `2`) —
+kuinka monta **lisä**kierrosta (kierros 1 on aina näkyvissä oletuksena)
+käyttäjä on avannut "+ Lisää kierros" -painikkeella kyseiselle ryhmälle.
 
-`weights`-avainten muoto (vain REFIT+TRACK): sama kuin `checks`,
-`"<blockKey>:<itemIndex>"` → merkkijono (kg).
+`weights`- ja `weightUnit`-avainten muoto (vain REFIT+TRACK): sama kuin
+`checks` (mukaan lukien `:r<n>`-pääte lisäkierroksille). `weights[key]` on
+merkkijono (kg-arvo), `weightUnit[key]` on `"kpl"` (per käsi) tai
+puuttuu/mitä tahansa muuta (tulkitaan "yht" eli yhteispainoksi).
 
 ### 3.4 Renderöintilogiikka
 
@@ -136,9 +148,29 @@ muuttuu (yksinkertainen re-render, ei virtuaali-DOM:ia). Avoinna olevat
 osiot muistetaan `dataset.key`:n avulla ennen uudelleenpiirtoa, jotta
 käyttäjän auki klikkaama osio ei sulkeudu.
 
-Supersarjaotsikko (`groupHead`) generoidaan kun `items`-taulukossa
-`ryhmäId` muuttuu edelliseen liikkeeseen verrattuna — siksi samaan ryhmään
-kuuluvat liikkeet **on pakko** olla peräkkäin taulukossa.
+Liikelistan purkaminen näytettäviksi riveiksi tapahtuu `expandItems(bk)`-
+apufunktiossa (ei suoraan `render()`:ssä), koska samaa rivijoukkoa
+tarvitaan myös kokonaismäärien laskentaan (`blockCounts()`) ja
+treenihistorian painotietojen keräämiseen (`captureWeights()`, vain
+REFIT+TRACK). `expandItems(bk)` palauttaa taulukon rivi-olioita:
+
+- `{type:"groupHead", label}` — "Supersarja N" -otsikko, generoidaan kun
+  `items`-taulukossa `ryhmäId` muuttuu edelliseen liikkeeseen verrattuna
+  (siksi samaan ryhmään kuuluvat liikkeet **on pakko** olla peräkkäin
+  taulukossa).
+- `{type:"roundHead", label}` — "Kierros 2" / "Kierros 3" -otsikko, vain
+  kun ryhmälle on avattu lisäkierroksia.
+- `{type:"item", it, key}` — yksittäinen liikerivi (checkbox, nimi,
+  toistot, kuvaus, ja REFIT+TRACK:ssa painokenttä+yksikkövalinta).
+- `{type:"groupActions", gKey, extra}` — "+ Lisää kierros" / "Poista
+  viimeisin kierros" -painikkeet ryhmän lopussa. `render()` piirtää
+  "+ Lisää kierros" -napin vain kun `extra < MAX_EXTRA_ROUNDS`, ja
+  "Poista"-napin vain kun `extra > 0`.
+
+`addRound(gKey)`/`removeRound(gKey)` muokkaavat `state.extraRounds[gKey]`-
+arvoa ja kutsuvat `render()`:iä. `removeRound()` siivoaa myös poistetun
+kierroksen `checks`/`weights`/`weightUnit`-avaimet, ettei orpoja
+merkintöjä jää jäljelle.
 
 ### 3.5 Vienti/tuonti (JSON-varmuuskopio)
 
@@ -209,7 +241,8 @@ osan CSS:stä, `PROGRAM`-datasta ja renderöintilogiikasta, mutta ovat
 | Uusi vaihe/liike, joka ei koske painoja | ✅ | |
 | Visuaaliset/tyyliparannukset (värit, fontit, kontrasti) | ✅ | |
 | Painojen syöttökenttä, painojen tallennus historiaan | | ✅ |
-| Kierrospallojen (1-2-3) sijainti/logiikka | ✅ (jaettu ominaisuus, molemmissa samanlainen) | |
+| Painon yksikkövalinta (yht/kpl) | | ✅ |
+| "+ Lisää kierros" / "Poista kierros" -mekaniikka (`expandItems`, `extraRounds`) | ✅ (jaettu ominaisuus, molemmissa samanlainen — `index.html`:ssä lisäksi painokenttä jokaisella kierroksella) | |
 
 Kun teet muutoksen jonka pitää näkyä molemmissa: muokkaa ensin yhtä
 tiedostoa, varmista se toimii, ja **toista sama muutos** toiseen (ei
@@ -218,10 +251,19 @@ kopioida koko tiedostoa päälle — se hävittäisi version-spesifiset erot).
 ## 7. Tunnetut sudenkuopat
 
 - `ryhmäId`: käytä `undefined`, ei `null`. Katso kohta 3.1.
-- Rounds-avaimen muoto muuttui liikeriveiltä (`bk:i`) ryhmätasolle
-  (`bk:g<ryhmäId>`) kun kierrosmerkintä siirrettiin liikeriviltä
-  supersarjaotsikkoon. Jos lisäät uuden ryhmätason ominaisuuden, käytä
-  samaa `bk:g<id>`-muotoa, ei liikekohtaista `key`-muuttujaa.
+- Kaksi eri avainmuotoa liittyvät kierroksiin, älä sekoita niitä:
+  `extraRounds["<bk>:g<ryhmäId>"]` (ryhmätasoinen, kuinka monta lisäkierrosta
+  on avattu) vs. `checks`/`weights`/`weightUnit`-avainten `":r<n>"`-pääte
+  (liikekohtainen, minkä kierroksen rasti/paino on kyseessä). Uusi
+  ryhmätason ominaisuus → käytä `bk:g<id>`-muotoa. Uusi liikekohtainen,
+  kierrosriippuvainen ominaisuus → käytä samaa `:r<n>`-päätekäytäntöä kuin
+  `expandItems()` jo tekee, jotta `blockCounts()`/`captureWeights()`/
+  `removeRound()` löytävät sen automaattisesti.
+- `b.items.length` **ei enää vastaa** lohkon näkyvien rivien määrää, koska
+  lisäkierrokset kasvattavat rivimäärää dynaamisesti. Käytä aina
+  `blockCounts(bk).total`/`.done` (ei `PROGRAM[bk].items.length`) kun
+  lasket edistymää tai kokonaismääriä — tämä oli aiemmin bugin lähde ennen
+  refaktorointia.
 - `localStorage`-avainten etuliitteet (`refit-` vs `refittrack-`) on
   pidettävä erillisinä — jos niitä sekoittaa, kahden version data menee
   päällekkäin ja vienti/tuonti-validointi (`data.app`) alkaa hylkiä

@@ -84,6 +84,8 @@
   .groupHead{font-size:.72rem; font-weight:600; letter-spacing:.4px; text-transform:uppercase;
     color:var(--accent2); background:var(--accent-dim); padding:6px 14px;
     border-top:1px solid var(--line);}
+  .roundHead{font-size:.68rem; font-weight:600; letter-spacing:.3px; text-transform:uppercase;
+    color:var(--muted); background:var(--card2); padding:5px 14px; border-top:1px solid var(--line);}
   .items label.item:first-child, .items .groupHead:first-child + label.item{border-top:none;}
 
   label.item{display:flex; align-items:center; gap:13px; padding:14px;
@@ -102,11 +104,13 @@
   label.item.checked .reps{opacity:.5;}
   label.item.checked .desc{opacity:.5;}
 
-  .rounds{display:flex; gap:4px; flex-shrink:0;}
-  .rdot{width:22px; height:22px; border-radius:50%; border:1px solid var(--line);
-    background:var(--card2); color:var(--muted); font-size:.72rem; font-weight:700;
-    display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;}
-  .rdot.on{background:var(--grad-accent); color:#052912; border-color:transparent;}
+  .groupActions{display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--line);}
+  .groupActions button{padding:8px 12px; border-radius:8px; border:1px dashed var(--line);
+    background:transparent; color:var(--muted); font-size:.78rem; font-weight:600; cursor:pointer;}
+  .groupActions .addBtn{flex:1;}
+  .groupActions .addBtn:hover{border-color:var(--accent); color:var(--accent2);}
+  .groupActions .removeBtn{border-style:solid;}
+  .groupActions .removeBtn:hover{border-color:var(--b); color:var(--b);}
 
   .note{font-size:.8rem; color:var(--warn); padding:12px 14px; border-top:1px solid var(--line);
     background:rgba(255,209,102,.07); font-weight:400;}
@@ -268,18 +272,72 @@ const PHASE_META = {"common1":{icon:"self_care"},"common2":{icon:"directions_run
 let state = load();
 function load(){
   try{ const s = JSON.parse(localStorage.getItem("refit-state")); if(s) return s; }catch(e){}
-  return { plan:"A", checks:{}, rounds:{}, date: todayStr() };
+  return { plan:"A", checks:{}, extraRounds:{}, date: todayStr() };
 }
 function save(){ localStorage.setItem("refit-state", JSON.stringify(state)); }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
-if(!state.rounds) state.rounds = {};
+if(!state.extraRounds) state.extraRounds = {};
 
 // new day → clear checks automatically
-if(state.date !== todayStr()){ state.checks = {}; state.rounds = {}; state.date = todayStr(); save(); }
+if(state.date !== todayStr()){ state.checks = {}; state.extraRounds = {}; state.date = todayStr(); save(); }
 
-function cycleRound(key, n){
-  const cur = state.rounds[key]||0;
-  state.rounds[key] = (cur===n) ? n-1 : n;
+const MAX_EXTRA_ROUNDS = 2; // + round 1 = enintään 3 kierrosta
+
+// Puretaan liikelista riveiksi: ryhmäotsikot, mahdolliset lisäkierrokset ja "lisää/poista kierros" -painikkeet
+function expandItems(bk){
+  const items = PROGRAM[bk].items;
+  const rows = [];
+  let i = 0, groupNum = 0;
+  while(i < items.length){
+    const g = items[i][2];
+    if(g===undefined){
+      rows.push({type:"item", it:items[i], key:bk+":"+i});
+      i++;
+      continue;
+    }
+    const members = [];
+    let j = i;
+    while(j<items.length && items[j][2]===g){ members.push({it:items[j], idx:j}); j++; }
+    groupNum++;
+    const gKey = bk+":g"+g;
+    rows.push({type:"groupHead", label:"Supersarja "+groupNum});
+    const extra = state.extraRounds[gKey]||0;
+    for(let r=1; r<=1+extra; r++){
+      if(r>1) rows.push({type:"roundHead", label:"Kierros "+r});
+      members.forEach(m=>{
+        const key = r===1 ? bk+":"+m.idx : bk+":"+m.idx+":r"+r;
+        rows.push({type:"item", it:m.it, key});
+      });
+    }
+    rows.push({type:"groupActions", gKey, extra});
+    i = j;
+  }
+  return rows;
+}
+
+function blockCounts(bk){
+  let total=0, done=0;
+  expandItems(bk).forEach(row=>{ if(row.type==="item"){ total++; if(state.checks[row.key]) done++; } });
+  return {total, done};
+}
+
+function addRound(gKey){
+  const cur = state.extraRounds[gKey]||0;
+  if(cur>=MAX_EXTRA_ROUNDS) return;
+  state.extraRounds[gKey] = cur+1;
+  save(); render();
+}
+
+function removeRound(gKey){
+  const cur = state.extraRounds[gKey]||0;
+  if(cur<=0) return;
+  const r = cur+1;
+  const [bk, gPart] = gKey.split(":g");
+  const g = Number(gPart);
+  PROGRAM[bk].items.forEach((it,i)=>{
+    if(it[2]===g) delete state.checks[bk+":"+i+":r"+r];
+  });
+  state.extraRounds[gKey] = cur-1;
   save(); render();
 }
 
@@ -310,38 +368,37 @@ function render(){
     const b = PROGRAM[bk];
     const sec = document.createElement("section");
     sec.className = "block"; sec.dataset.key = bk;
-    let bDone=0;
-    let lastGroup=null, groupNum=0;
-    const itemsHtml = b.items.map((it,i)=>{
-      const key = bk+":"+i;
-      const checked = !!state.checks[key];
-      total++; if(checked){ done++; bDone++; }
-      let header = "";
-      const group = it[2];
-      if(group!==undefined && group!==lastGroup){ groupNum++; header = `<div class="groupHead">Supersarja ${groupNum}</div>`; }
-      lastGroup = group;
-      let roundsHtml = "";
-      if(bk==="A"){
-        const cur = state.rounds[key]||0;
-        roundsHtml = `<span class="rounds">${[1,2,3].map(n=>
-          `<button type="button" class="rdot ${n<=cur?"on":""}" onclick="event.preventDefault();event.stopPropagation();cycleRound('${key}',${n})">${n}</button>`
-        ).join("")}</span>`;
+    let bDone=0, bTotal=0;
+    const itemsHtml = expandItems(bk).map(row=>{
+      if(row.type==="groupHead") return `<div class="groupHead">${row.label}</div>`;
+      if(row.type==="roundHead") return `<div class="roundHead">${row.label}</div>`;
+      if(row.type==="groupActions"){
+        const addBtn = row.extra<MAX_EXTRA_ROUNDS
+          ? `<button type="button" class="addBtn" onclick="addRound('${row.gKey}')">+ Lisää kierros</button>`
+          : "";
+        const removeBtn = row.extra>0
+          ? `<button type="button" class="removeBtn" onclick="removeRound('${row.gKey}')">Poista viimeisin kierros</button>`
+          : "";
+        return (addBtn||removeBtn) ? `<div class="groupActions">${addBtn}${removeBtn}</div>` : "";
       }
+      const { it, key } = row;
+      const checked = !!state.checks[key];
+      bTotal++; total++; if(checked){ done++; bDone++; }
       const desc = it[3];
-      return `${header}<label class="item ${checked?"checked":""}">
+      return `<label class="item ${checked?"checked":""}">
         <input type="checkbox" ${checked?"checked":""} onchange="toggle('${key}',this.checked)">
         <div class="itemBody">
           <div class="itemTop"><span class="name">${it[0]}</span><span class="reps">${it[1]}</span></div>
           ${desc?`<div class="desc">${desc}</div>`:""}
-        </div>${roundsHtml}</label>`;
+        </div></label>`;
     }).join("");
-    const allDone = bDone===b.items.length;
+    const allDone = bTotal>0 && bDone===bTotal;
     if(!allDone && firstUnfinished===null) firstUnfinished = idx;
     sec.innerHTML = `
       <div class="blockHead ${allDone?"done":""}" onclick="this.parentNode.classList.toggle('open')">
         <div class="num">${allDone?"✓":idx+1}</div>
         <h2><span class="material-symbols-outlined" aria-hidden="true">${(PHASE_META[bk]||{}).icon||""}</span> ${b.title}</h2>
-        <span class="count">${bDone}/${b.items.length}</span>
+        <span class="count">${bDone}/${bTotal}</span>
         <span class="chev">▶</span>
       </div>
       <div class="items">${itemsHtml}${b.note?`<div class="note"><span class="material-symbols-outlined" aria-hidden="true">info</span> ${b.note}</div>`:""}</div>`;
@@ -365,16 +422,16 @@ function render(){
 
 function finishWorkout(){
   const hist = JSON.parse(localStorage.getItem("refit-history")||"[]");
-  const total = blockOrder().reduce((n,bk)=>n+PROGRAM[bk].items.length,0);
+  const total = blockOrder().reduce((n,bk)=>n+blockCounts(bk).total,0);
   const done = Object.keys(state.checks).length;
   hist.unshift({date: todayStr(), plan: state.plan, done, total});
   localStorage.setItem("refit-history", JSON.stringify(hist.slice(0,50)));
-  state.checks = {}; state.rounds = {}; save(); render();
+  state.checks = {}; state.extraRounds = {}; save(); render();
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
 function resetDay(){
-  if(confirm("Tyhjennetäänkö tämän päivän merkinnät?")){ state.checks={}; state.rounds={}; save(); render(); }
+  if(confirm("Tyhjennetäänkö tämän päivän merkinnät?")){ state.checks={}; state.extraRounds={}; save(); render(); }
 }
 
 function renderHistory(){
