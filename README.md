@@ -9,7 +9,7 @@ palvelussa.
 
 | Tiedosto | Nimi | Kuvaus |
 |---|---|---|
-| [`index.html`](index.html) | **REFIT+TRACK** | Saliohjelman seuranta + painojen (kg) merkitseminen ja tallennus historiaan |
+| [`index.html`](index.html) | **REFIT+TRACK** | Saliohjelman seuranta + painojen (kg) merkitseminen (yhteispaino tai per käsi) ja tallennus historiaan |
 | [`index-0.5.html`](index-0.5.html) | **REFIT** | Perusversio ilman painoseurantaa |
 
 Molemmista pääsee toiseen sivun alalaidan "Vaihda versioon" -linkistä.
@@ -18,7 +18,8 @@ Molemmista pääsee toiseen sivun alalaidan "Vaihda versioon" -linkistä.
 
 - Saliohjelma jaettuna vaiheisiin: alkuvenyttely → alkuverryttely → painoharjoitteet (Treeni A / B) → vatsalihakset → loppuverryttely
 - Liikkeiden rastitus ja koko treenin edistymän seuranta
-- Supersarjojen kierrosmerkintä (1–3 kierrosta)
+- Supersarjojen dynaaminen kierrosmerkintä — "+ Lisää kierros" avaa 2. ja 3. kierroksen tarvittaessa
+- Vapaa tekstikenttä liikkeille joilla ei ole kiinteää sisältöä (esim. "Vapaa painoharjoittelu")
 - Treenihistoria, josta merkintöjä voi myös poistaa
 - Data tallentuu selaimen `localStorage`:iin — ei tiliä, ei palvelinta
 - Varmuuskopion vienti/tuonti JSON-tiedostona

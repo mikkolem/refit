@@ -104,6 +104,12 @@
   label.item.checked .reps{opacity:.5;}
   label.item.checked .desc{opacity:.5;}
 
+  .freeNoteInput{width:100%; margin-top:2px; padding:8px 10px; border-radius:8px;
+    border:1px solid var(--line); background:var(--card2); color:var(--text); font-size:.85rem;}
+  .freeNoteInput::placeholder{color:var(--muted);}
+  .freeNoteInput:focus{outline:2px solid var(--a); outline-offset:1px;}
+  label.item.checked .freeNoteInput{opacity:.6;}
+
   .groupActions{display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--line);}
   .groupActions button{padding:8px 12px; border-radius:8px; border:1px dashed var(--line);
     background:transparent; color:var(--muted); font-size:.78rem; font-weight:600; cursor:pointer;}
@@ -228,7 +234,8 @@ const PROGRAM = {
       ["Ranskalainen punnerrus", "8–10 ×2", 4, "Pidä paino suorin käsin pään yläpuolella, laske se koukistaen kyynärpäitä niskan taakse ja ojenna takaisin ylös."],
       ["Kyykky", "8–10 ×2", 5, "Laskeudu kyykkyyn selkä suorana, nouse ylös jalkojen voimalla."],
       ["Askelkyykky", "8–10 ×2", 5, "Astu pitkä askel eteen, laske takajalan polvi lähelle lattiaa."],
-      ["Pohkeet", "20 ×2", undefined, "Nouse varpaille ja laske hitaasti takaisin, seisten tai penkin reunalla."],
+      ["Pohkeet", "20 ×2", 5, "Nouse varpaille ja laske hitaasti takaisin, seisten tai penkin reunalla."],
+      ["Vapaa painoharjoittelu", "", 6, "Valitse itse liike ja kirjaa mitä teit kenttään.", true],
     ]
   },
   B: {
@@ -240,15 +247,14 @@ const PROGRAM = {
       ["Kulmasoutu (tai leuanveto)", "10 ×3", undefined, "Etukumarassa vedä paino vartaloa kohti, tai vedä leuanveto tangolla."],
       ["Pystypunnerrus", "10 ×4", undefined, "Punnerra paino hartioilta suoraan pään yläpuolelle seisten."],
       ["Hauiskääntö", "10 ×3", undefined, "Käännä paino kyynärpää tukevana kohti hartiaa."],
-      ["Vatsalihakset / istumaannousut", "max ×3 tai 15 ×3", undefined, "Tee istumaannousuja niin monta kuin jaksat, kolme sarjaa."],
     ]
   },
   abs: {
     title: "Vatsalihakset",
     items: [
       ["Istumaannousu", "×10", undefined, "Nouse selinmakuulta ylös vatsalihaksia jännittäen."],
-      ["Rutistus kiertäen", "×60", undefined, "Rutista ylävartaloa kiertäen kohti vastakkaista polvea, vuorotellen."],
-      ["Potkuliike ja nosto", "×10", undefined, "Selinmakuulla potki jalkoja ristiin ja nosta suorina ylös."],
+      ["Rutistus kiertäen", "×10", undefined, "Rutista ylävartaloa kiertäen kohti vastakkaista polvea, vuorotellen."],
+      ["Potkuliike", "×20", undefined, "Selinmakuulla potki jalkoja edes takaisin potkutellen."],
       ["Sivunosto", "×10", undefined, "Kylkimakuulla nosta jalat/ylävartalo sivuttain kohti toisiaan."],
       ["Lankku", "×1", undefined, "Pidä vartalo suorana kyynärvarsien ja varpaiden varassa, jännitä keskivartalo."],
     ]
@@ -272,14 +278,15 @@ const PHASE_META = {"common1":{icon:"self_care"},"common2":{icon:"directions_run
 let state = load();
 function load(){
   try{ const s = JSON.parse(localStorage.getItem("refit-state")); if(s) return s; }catch(e){}
-  return { plan:"A", checks:{}, extraRounds:{}, date: todayStr() };
+  return { plan:"A", checks:{}, extraRounds:{}, freeNotes:{}, date: todayStr() };
 }
 function save(){ localStorage.setItem("refit-state", JSON.stringify(state)); }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 if(!state.extraRounds) state.extraRounds = {};
+if(!state.freeNotes) state.freeNotes = {};
 
 // new day → clear checks automatically
-if(state.date !== todayStr()){ state.checks = {}; state.extraRounds = {}; state.date = todayStr(); save(); }
+if(state.date !== todayStr()){ state.checks = {}; state.extraRounds = {}; state.freeNotes = {}; state.date = todayStr(); save(); }
 
 const MAX_EXTRA_ROUNDS = 2; // + round 1 = enintään 3 kierrosta
 
@@ -335,9 +342,19 @@ function removeRound(gKey){
   const [bk, gPart] = gKey.split(":g");
   const g = Number(gPart);
   PROGRAM[bk].items.forEach((it,i)=>{
-    if(it[2]===g) delete state.checks[bk+":"+i+":r"+r];
+    if(it[2]===g){
+      const key = bk+":"+i+":r"+r;
+      delete state.checks[key];
+      delete state.freeNotes[key];
+    }
   });
   state.extraRounds[gKey] = cur-1;
+  save(); render();
+}
+
+function setFreeNote(key, val){
+  const v = val.trim();
+  if(v==="") delete state.freeNotes[key]; else state.freeNotes[key] = v;
   save(); render();
 }
 
@@ -385,11 +402,18 @@ function render(){
       const checked = !!state.checks[key];
       bTotal++; total++; if(checked){ done++; bDone++; }
       const desc = it[3];
+      let freeHtml = "";
+      if(it[4]){
+        const note = state.freeNotes[key]||"";
+        freeHtml = `<input type="text" class="freeNoteInput" placeholder="Kirjoita mitä teit (liike, sarjat, toistot...)" value="${note}"
+          onclick="event.stopPropagation()" onchange="setFreeNote('${key}', this.value)">`;
+      }
       return `<label class="item ${checked?"checked":""}">
         <input type="checkbox" ${checked?"checked":""} onchange="toggle('${key}',this.checked)">
         <div class="itemBody">
           <div class="itemTop"><span class="name">${it[0]}</span><span class="reps">${it[1]}</span></div>
           ${desc?`<div class="desc">${desc}</div>`:""}
+          ${freeHtml}
         </div></label>`;
     }).join("");
     const allDone = bTotal>0 && bDone===bTotal;
@@ -426,12 +450,12 @@ function finishWorkout(){
   const done = Object.keys(state.checks).length;
   hist.unshift({date: todayStr(), plan: state.plan, done, total});
   localStorage.setItem("refit-history", JSON.stringify(hist.slice(0,50)));
-  state.checks = {}; state.extraRounds = {}; save(); render();
+  state.checks = {}; state.extraRounds = {}; state.freeNotes = {}; save(); render();
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
 function resetDay(){
-  if(confirm("Tyhjennetäänkö tämän päivän merkinnät?")){ state.checks={}; state.extraRounds={}; save(); render(); }
+  if(confirm("Tyhjennetäänkö tämän päivän merkinnät?")){ state.checks={}; state.extraRounds={}; state.freeNotes={}; save(); render(); }
 }
 
 function renderHistory(){
@@ -489,7 +513,7 @@ function importData(input){
       localStorage.setItem("refit-history", JSON.stringify(merged.slice(0,200)));
       // restore today's checks only if the backup is from today and today is empty
       if(data.state && data.state.date===todayStr() && Object.keys(state.checks).length===0){
-        state = data.state; save();
+        state = data.state; if(!state.freeNotes) state.freeNotes={}; save();
       }
       msg.style.color = "var(--accent)";
       msg.textContent = "Tuotu: "+merged.length+" treeniä historiassa ✓";

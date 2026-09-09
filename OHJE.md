@@ -44,9 +44,14 @@ molempiin päteviä muutoksia (ks. kohta 6).
    automaattisesti päivän vaihtuessa), jotta progressiivista kuormaa on helppo
    seurata. "Tyhjennä"-nappi nollaa halutessa myös painot ja yksikkövalinnat
    (varmistetaan erikseen dialogilla).
-6. "Merkitse treeni tehdyksi" tallentaa treenin (+ REFIT+TRACK:ssa käytetyt painot)
+6. Joissakin liikkeissä (esim. Treeni A:n "Vapaa painoharjoittelu") ei ole
+   kiinteää liikettä — käyttäjä kirjoittaa vapaaseen tekstikenttään mitä
+   teki. REFIT+TRACK:ssa tämä yhdistyy painoon/yksikköön samaksi
+   historiamerkinnäksi (esim. "40 kg — Käsipainojaloittelu"); perusversiossa
+   teksti näkyy vain kyseisen päivän ajan eikä tallennu historiaan.
+7. "Merkitse treeni tehdyksi" tallentaa treenin (+ REFIT+TRACK:ssa käytetyt painot)
    historialistaan ja nollaa päivän rastit.
-7. Treenihistoria näkyy sivun alaosassa, siitä voi poistaa yksittäisiä merkintöjä,
+8. Treenihistoria näkyy sivun alaosassa, siitä voi poistaa yksittäisiä merkintöjä,
    ja koko data voidaan viedä/tuoda JSON-tiedostona (varmuuskopio).
 
 ## 3. Tekninen rakenne
@@ -66,7 +71,7 @@ const PROGRAM = {
     title: "Otsikko",
     note: "Valinnainen huomio (näkyy vaiheen alla, esim. kiertomäärä)",
     items: [
-      [nimi, toistoteksti, ryhmäId, kuvaus],
+      [nimi, toistoteksti, ryhmäId, kuvaus, vapaaTekstiFlag],
       ...
     ]
   },
@@ -90,12 +95,23 @@ Yksittäinen liike on **taulukko, ei olio** — järjestys on tarkka:
    virheellisesti uuden ryhmäotsikon.
 4. `kuvaus` (string) — pieni harmaa suoritusohje liikkeen nimen alla. Pidä
    1 virke, ytimekäs, oikea liiketekniikka (ei yleisluontoista täytettä).
+5. `vapaaTekstiFlag` (`true` tai puuttuu) — **valinnainen**, viides alkio.
+   Kun `true`, liikeriville piirretään lisäksi vapaa tekstikenttä
+   ("Kirjoita mitä teit...") jonka arvo tallentuu `state.freeNotes[key]`-
+   avaimeen `setFreeNote()`-funktion kautta. Käytetään liikkeille joilla ei
+   ole kiinteää sisältöä (esim. "Vapaa painoharjoittelu"). Toisin kuin
+   `weights`/`weightUnit`, `freeNotes` on molemmissa tiedostoissa, mutta
+   REFIT+TRACK yhdistää sen `captureWeights()`:ssä osaksi treenihistoriaa;
+   perusversiossa se on vain päivän ajan näkyvä, ei arkistoidu historiaan.
 
-Esimerkki (Treeni A, kaksi liikettä samassa supersarjassa):
+Esimerkki (Treeni A, kaksi liikettä samassa supersarjassa; sen jälkeen
+yksittäinen vapaa-tekstiliike omassa ryhmässään):
 
 ```js
 ["Penkkipunnerrus (kp tai levytanko)", "8–10 ×2", 2, "Punnerra paino penkillä maaten rinnalta ylös."],
 ["Vipunosto maaten", "8–10 ×2", 2, "Selin makuulla nosta käsipainot suorin käsin sivulta ylös."],
+...
+["Vapaa painoharjoittelu", "", 6, "Valitse itse liike ja kirjaa mitä teit kenttään.", true],
 ```
 
 ### 3.2 Vaihejärjestys ja treenin kokoonpano
@@ -120,7 +136,7 @@ Ei backendiä — kaikki data on selaimen `localStorage`:ssa, laitekohtaista.
 
 | Avain | Sisältö | Nollautuu |
 |---|---|---|
-| `refit(-track)-state` | `{plan, checks, extraRounds, weights?, weightUnit?, date}` — päivän tilanne | `checks`+`extraRounds` nollautuu automaattisesti kun `date` ≠ tämä päivä. `weights`+`weightUnit` (vain REFIT+TRACK) **eivät nollaudu automaattisesti** päivän vaihtuessa — ne ovat tarkoituksella pysyvä referenssi viimeksi käytetylle painolle. Manuaalinen "Tyhjennä"-nappi nollaa REFIT+TRACK:ssa kaikki neljä (`checks`+`extraRounds`+`weights`+`weightUnit`); REFIT (`index-0.5.html`) nollaa vain `checks`+`extraRounds`, koska sillä ei ole painokenttiä. |
+| `refit(-track)-state` | `{plan, checks, extraRounds, freeNotes, weights?, weightUnit?, date}` — päivän tilanne | `checks`+`extraRounds`+`freeNotes` nollautuu automaattisesti kun `date` ≠ tämä päivä (myös `finishWorkout()`:ssa). `weights`+`weightUnit` (vain REFIT+TRACK) **eivät nollaudu automaattisesti** päivän vaihtuessa — ne ovat tarkoituksella pysyvä referenssi viimeksi käytetylle painolle. Manuaalinen "Tyhjennä"-nappi nollaa REFIT+TRACK:ssa kaikki viisi (`checks`+`extraRounds`+`freeNotes`+`weights`+`weightUnit`); REFIT (`index-0.5.html`) nollaa `checks`+`extraRounds`+`freeNotes`, koska sillä ei ole painokenttiä. |
 | `refit(-track)-history` | Taulukko valmiiksi merkityistä treeneistä | Ei nollaudu itsestään; poistetaan yksittäin roskakori-ikonista. |
 
 REFIT käyttää avainten etuliitettä `refit-`, REFIT+TRACK `refittrack-` —
@@ -140,6 +156,11 @@ käyttäjä on avannut "+ Lisää kierros" -painikkeella kyseiselle ryhmälle.
 `checks` (mukaan lukien `:r<n>`-pääte lisäkierroksille). `weights[key]` on
 merkkijono (kg-arvo), `weightUnit[key]` on `"kpl"` (per käsi) tai
 puuttuu/mitä tahansa muuta (tulkitaan "yht" eli yhteispainoksi).
+
+`freeNotes`-avainten muoto (molemmissa tiedostoissa): sama kuin `checks`.
+Arvo on käyttäjän vapaasti kirjoittama teksti, tallennetaan vain liikkeille
+joilla `it[4]===true` (ks. 3.1). `setFreeNote(key, val)` poistaa avaimen
+kokonaan jos arvo tyhjennetään.
 
 ### 3.4 Renderöintilogiikka
 
@@ -161,7 +182,8 @@ REFIT+TRACK). `expandItems(bk)` palauttaa taulukon rivi-olioita:
 - `{type:"roundHead", label}` — "Kierros 2" / "Kierros 3" -otsikko, vain
   kun ryhmälle on avattu lisäkierroksia.
 - `{type:"item", it, key}` — yksittäinen liikerivi (checkbox, nimi,
-  toistot, kuvaus, ja REFIT+TRACK:ssa painokenttä+yksikkövalinta).
+  toistot, kuvaus, REFIT+TRACK:ssa painokenttä+yksikkövalinta, ja jos
+  `it[4]===true`, vapaa tekstikenttä molemmissa tiedostoissa).
 - `{type:"groupActions", gKey, extra}` — "+ Lisää kierros" / "Poista
   viimeisin kierros" -painikkeet ryhmän lopussa. `render()` piirtää
   "+ Lisää kierros" -napin vain kun `extra < MAX_EXTRA_ROUNDS`, ja
@@ -169,8 +191,14 @@ REFIT+TRACK). `expandItems(bk)` palauttaa taulukon rivi-olioita:
 
 `addRound(gKey)`/`removeRound(gKey)` muokkaavat `state.extraRounds[gKey]`-
 arvoa ja kutsuvat `render()`:iä. `removeRound()` siivoaa myös poistetun
-kierroksen `checks`/`weights`/`weightUnit`-avaimet, ettei orpoja
-merkintöjä jää jäljelle.
+kierroksen `checks`/`weights`/`weightUnit`/`freeNotes`-avaimet, ettei
+orpoja merkintöjä jää jäljelle.
+
+REFIT+TRACK:n `captureWeights(bk)` (kutsutaan `finishWorkout()`:ssa) käy
+läpi `expandItems(bk)`-rivit ja yhdistää sekä `weights`+`weightUnit` että
+`freeNotes`-arvon samaksi historiamerkinnäksi per liike (esim. "40 kg —
+Käsipainojaloittelu"). Nimestä huolimatta funktio siis kerää myös
+vapaatekstit, ei pelkkiä painoja.
 
 ### 3.5 Vienti/tuonti (JSON-varmuuskopio)
 
@@ -229,6 +257,13 @@ Lisää uusi `blockKey` `WEIGHT_BLOCKS`-taulukkoon (`index.html`:n alussa,
 `const WEIGHT_BLOCKS = ["A","B"];`). Tämä riittää — kg-kenttä ilmestyy
 automaattisesti kaikkiin sen osion liikkeisiin.
 
+**Vapaa tekstikenttä liikkeelle jolla ei ole kiinteää sisältöä:**
+Lisää rivin 5. alkioksi `true`, esim.
+`["Vapaa painoharjoittelu", "", 6, "Kuvausteksti.", true]`. Toimii sekä
+`index.html`:ssä että `index-0.5.html`:ssä (lisää molempiin), mutta
+historia-arkistointi (`captureWeights()`) toimii vain REFIT+TRACK:ssa —
+perusversiossa teksti on vain sen päivän ajan näkyvä.
+
 ## 6. Kahden version synkronointi
 
 `index.html` (REFIT+TRACK) ja `index-0.5.html` (REFIT) jakavat suurimman
@@ -243,6 +278,8 @@ osan CSS:stä, `PROGRAM`-datasta ja renderöintilogiikasta, mutta ovat
 | Painojen syöttökenttä, painojen tallennus historiaan | | ✅ |
 | Painon yksikkövalinta (yht/kpl) | | ✅ |
 | "+ Lisää kierros" / "Poista kierros" -mekaniikka (`expandItems`, `extraRounds`) | ✅ (jaettu ominaisuus, molemmissa samanlainen — `index.html`:ssä lisäksi painokenttä jokaisella kierroksella) | |
+| Vapaa tekstikenttä (`it[4]===true`, `freeNotes`, `setFreeNote()`) | ✅ (kenttä itsessään molemmissa) | |
+| Vapaan tekstikentän arkistointi treenihistoriaan | | ✅ (perusversiossa teksti häviää päivän vaihtuessa) |
 
 Kun teet muutoksen jonka pitää näkyä molemmissa: muokkaa ensin yhtä
 tiedostoa, varmista se toimii, ja **toista sama muutos** toiseen (ei
@@ -251,6 +288,11 @@ kopioida koko tiedostoa päälle — se hävittäisi version-spesifiset erot).
 ## 7. Tunnetut sudenkuopat
 
 - `ryhmäId`: käytä `undefined`, ei `null`. Katso kohta 3.1.
+- Liiketaulukot ovat nyt vaihtelevan pituisia: useimmilla on 4 alkiota
+  (`[nimi, toistot, ryhmäId, kuvaus]`), mutta vapaa-tekstiliikkeillä 5.
+  (`it[4]===true`). Kun luet/kirjoitat `it`-taulukkoa koodissa, älä oleta
+  kiinteää pituutta — tarkista `it[4]` aina totuusarvona (`if(it[4])`), ei
+  `it.length===5`.
 - Kaksi eri avainmuotoa liittyvät kierroksiin, älä sekoita niitä:
   `extraRounds["<bk>:g<ryhmäId>"]` (ryhmätasoinen, kuinka monta lisäkierrosta
   on avattu) vs. `checks`/`weights`/`weightUnit`-avainten `":r<n>"`-pääte
